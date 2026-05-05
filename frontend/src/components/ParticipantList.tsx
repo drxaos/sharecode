@@ -27,7 +27,7 @@ export default function ParticipantList({
             isDark ? 'text-gray-400' : 'text-gray-500'
           }`}
         >
-          Участники ({participants.length})
+          Participants ({participants.length})
         </span>
       </div>
       <ul className="py-2 space-y-0.5">
@@ -52,7 +52,7 @@ export default function ParticipantList({
             {p.clientID === currentClientID && (
               <button
                 onClick={onRenameClick}
-                title="Сменить имя"
+                title="Rename"
                 className={`text-xs flex-shrink-0 hover:scale-110 transition-transform ${
                   isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'
                 }`}

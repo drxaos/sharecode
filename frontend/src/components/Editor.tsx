@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react'
-import { EditorView, lineNumbers } from '@codemirror/view'
+import { EditorView, lineNumbers, keymap } from '@codemirror/view'
 import { EditorState, Compartment } from '@codemirror/state'
 import {
   indentOnInput,
   syntaxHighlighting,
   defaultHighlightStyle,
+  indentUnit,
 } from '@codemirror/language'
+import { defaultKeymap, indentWithTab } from '@codemirror/commands'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { yCollab } from 'y-codemirror.next'
 import type * as Y from 'yjs'
@@ -35,6 +37,8 @@ export default function Editor({ yText, provider, language, fontSize, theme }: E
         extensions: [
           lineNumbers(),
           indentOnInput(),
+          indentUnit.of('  '),
+          keymap.of([...defaultKeymap, indentWithTab]),
           syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
           langCompartment.current.of([]),
           themeCompartment.current.of([]),

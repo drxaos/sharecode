@@ -31,7 +31,7 @@ export default function RoomEditor({ roomId, nickname }: RoomEditorProps) {
     if (!provider) return
     const handleClose = (event: CloseEvent | null) => {
       if (event && event.code === 1001) {
-        navigate('/', { state: { toast: 'Комната была закрыта' } })
+        navigate('/', { state: { toast: 'Room was closed' } })
       }
     }
     provider.on('connection-close', handleClose)
@@ -78,7 +78,7 @@ export default function RoomEditor({ roomId, nickname }: RoomEditorProps) {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
           </svg>
-          <span className="text-slate-400">Инициализация редактора...</span>
+          <span className="text-slate-400">Initializing editor...</span>
         </div>
       </div>
     )
@@ -106,7 +106,7 @@ export default function RoomEditor({ roomId, nickname }: RoomEditorProps) {
 
       {sizeWarning && (
         <div className="bg-yellow-500 text-yellow-900 text-sm text-center py-1.5 font-medium">
-          Достигнут лимит объёма кода 100 КБ. Дальнейшее редактирование может быть недоступно.
+          100 KB code limit reached. Further editing may be unavailable.
         </div>
       )}
 
@@ -128,7 +128,7 @@ export default function RoomEditor({ roomId, nickname }: RoomEditorProps) {
 
       {showRenameModal && (
         <NicknameModal
-          title="Сменить никнейм"
+          title="Change Nickname"
           initialValue={sessionStorage.getItem('sharecode.nickname') ?? ''}
           onConfirm={handleRename}
         />

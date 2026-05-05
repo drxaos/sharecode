@@ -23,10 +23,10 @@ export default function RoomPage() {
       if (res.ok) {
         setPhase('ready')
       } else {
-        navigate('/', { state: { error: 'Комната не найдена или уже закрыта' } })
+        navigate('/', { state: { error: 'Room not found or already closed' } })
       }
     } catch {
-      navigate('/', { state: { error: 'Ошибка соединения с сервером' } })
+      navigate('/', { state: { error: 'Server connection error' } })
     }
   }, [id, navigate])
 
@@ -54,7 +54,7 @@ export default function RoomPage() {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
           </svg>
-          <span className="text-slate-400">Подключение к комнате...</span>
+          <span className="text-slate-400">Connecting to room...</span>
         </div>
       </div>
     )

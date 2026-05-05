@@ -27,7 +27,7 @@ export default function Toolbar({
   const navigate = useNavigate()
 
   const handleCloseRoom = async () => {
-    if (!window.confirm('Закрыть комнату для всех участников? Это действие необратимо.')) return
+    if (!window.confirm('Close the room for all participants? This action is irreversible.')) return
     fetch(`/api/rooms/${roomId}`, { method: 'DELETE' }).catch(() => {})
     navigate('/')
   }
@@ -47,15 +47,16 @@ export default function Toolbar({
       }`}
     >
       {/* Logo */}
-      <span className={`font-bold text-sm mr-2 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
-        Sharecode
+      <span className="font-thin text-sm mr-2">
+        <span className={isDark ? 'text-blue-400' : 'text-blue-600'}>Share</span>
+        <span className={isDark ? 'text-gray-100' : 'text-gray-800'}>code</span>
       </span>
 
       <div className={`w-px h-5 ${isDark ? 'bg-gray-600' : 'bg-gray-300'}`} />
 
       {/* Language selector */}
       <label className="flex items-center gap-1.5">
-        <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Язык:</span>
+        <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Language:</span>
         <select
           value={language}
           onChange={(e) => onLanguageChange(e.target.value)}
@@ -71,7 +72,7 @@ export default function Toolbar({
 
       {/* Font size selector */}
       <label className="flex items-center gap-1.5">
-        <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Шрифт:</span>
+        <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Font:</span>
         <select
           value={fontSize}
           onChange={(e) => onFontSizeChange(Number(e.target.value))}
@@ -88,7 +89,7 @@ export default function Toolbar({
       {/* Theme toggle */}
       <button
         onClick={onThemeToggle}
-        title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
+        title={theme === 'dark' ? 'Light theme' : 'Dark theme'}
         className={`p-1.5 rounded hover:bg-opacity-20 transition ${
           isDark ? 'hover:bg-white text-gray-300' : 'hover:bg-black text-gray-600'
         }`}
@@ -104,7 +105,7 @@ export default function Toolbar({
         onClick={handleCloseRoom}
         className="text-sm px-3 py-1.5 rounded border border-red-400 text-red-500 hover:bg-red-500 hover:text-white transition"
       >
-        Закрыть комнату
+        Close Room
       </button>
     </div>
   )

@@ -43,17 +43,17 @@ export default function LandingPage() {
     try {
       const res = await fetch('/api/rooms', { method: 'POST' })
       if (res.status === 429) {
-        setError('Достигнуто максимальное количество активных комнат. Попробуйте позже.')
+        setError('Room limit reached. Please try again later.')
         return
       }
       if (!res.ok) {
-        setError('Не удалось создать комнату. Попробуйте ещё раз.')
+        setError('Failed to create room. Please try again.')
         return
       }
       const { id } = await res.json()
       navigate(`/room/${id}`)
     } catch {
-      setError('Ошибка соединения с сервером.')
+      setError('Server connection error.')
     } finally {
       setLoading(false)
     }
@@ -86,8 +86,11 @@ export default function LandingPage() {
               />
             </svg>
           </div>
-          <h1 className="text-5xl font-bold tracking-tight">Sharecode</h1>
-          <p className="text-slate-400 text-lg">Совместное редактирование кода в реальном времени</p>
+          <h1 className="text-5xl font-thin tracking-tight">
+            <span className="text-blue-600">Share</span>
+            <span className="text-white">code</span>
+          </h1>
+          <p className="text-slate-400 text-lg">Real-time collaborative code editing</p>
         </div>
 
         {/* Action */}
@@ -114,10 +117,10 @@ export default function LandingPage() {
                     d="M4 12a8 8 0 018-8v8H4z"
                   />
                 </svg>
-                Создание...
+                Creating...
               </span>
             ) : (
-              'Создать комнату'
+              'Create Room'
             )}
           </button>
 
@@ -130,7 +133,7 @@ export default function LandingPage() {
 
         {/* Description */}
         <p className="text-slate-500 text-sm">
-          Создайте комнату, поделитесь ссылкой — и редактируйте код вместе
+          Create a room, share the link — and edit code together
         </p>
       </div>
     </div>
