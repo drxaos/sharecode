@@ -2,6 +2,8 @@
 
 A real-time collaborative code editor. Create a room, share the URL, and edit code together with live cursor and selection sync. Rooms auto-delete 5 minutes after the last participant disconnects.
 
+![](doc/scr.png "screenshot")
+
 ## Features
 
 - Real-time collaborative editing via Yjs CRDT
