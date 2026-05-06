@@ -24,26 +24,28 @@ export interface Language {
 }
 
 export const LANGUAGES: Language[] = [
+  // Plain text always first
   { id: 'text', label: 'Plain text' },
-  { id: 'javascript', label: 'JavaScript' },
-  { id: 'typescript', label: 'TypeScript' },
-  { id: 'python', label: 'Python' },
-  { id: 'go', label: 'Go' },
-  { id: 'java', label: 'Java' },
-  { id: 'cpp', label: 'C++' },
+  // Alphabetical order (by label) for the rest
   { id: 'csharp', label: 'C#' },
-  { id: 'rust', label: 'Rust' },
-  { id: 'html', label: 'HTML' },
+  { id: 'cpp', label: 'C++' },
   { id: 'css', label: 'CSS' },
-  { id: 'json', label: 'JSON' },
-  { id: 'sql', label: 'SQL' },
-  { id: 'yaml', label: 'YAML' },
-  { id: 'markdown', label: 'Markdown' },
-  { id: 'xml', label: 'XML' },
-  { id: 'php', label: 'PHP' },
-  { id: 'swift', label: 'Swift' },
+  { id: 'go', label: 'Go' },
+  { id: 'html', label: 'HTML' },
+  { id: 'java', label: 'Java' },
+  { id: 'javascript', label: 'JavaScript' },
   { id: 'kotlin', label: 'Kotlin' },
-]
+  { id: 'json', label: 'JSON' },
+  { id: 'markdown', label: 'Markdown' },
+  { id: 'php', label: 'PHP' },
+  { id: 'python', label: 'Python' },
+  { id: 'rust', label: 'Rust' },
+  { id: 'sql', label: 'SQL' },
+  { id: 'swift', label: 'Swift' },
+  { id: 'typescript', label: 'TypeScript' },
+  { id: 'xml', label: 'XML' },
+  { id: 'yaml', label: 'YAML' },
+];
 
 export function getLang(id: string): Extension {
   switch (id) {
