@@ -92,10 +92,10 @@ func (h *Hub) handleRegister(c *Client) {
 	updates := r.GetUpdates()
 	log.Printf("[hub:%s] + client %s joined (total: %d), replaying %d update(s)", h.roomID, c.conn.RemoteAddr(), len(h.clients), len(updates))
 
-	// Push all accumulated updates to the new client so it catches up,
+	// Push all accumulated updates to the new client as syncStep2 messages so it catches up,
 	// then send an empty syncStep2 to mark the sync as complete (sets provider.synced).
 	for _, u := range updates {
-		c.Send(u)
+		c.Send(asSyncStep2(u))
 	}
 	c.Send(emptySyncStep2())
 	log.Printf("[hub:%s] → %s: replay done, sent emptySyncStep2", h.roomID, c.conn.RemoteAddr())
@@ -142,8 +142,12 @@ func (h *Hub) handleMessage(sender *Client, data []byte) {
 			return
 		}
 		switch data[1] {
-		case 0: // syncStep1 — client asks what's missing; we already pushed everything on connect
-			log.Printf("[hub:%s] ← %s: syncStep1, replying emptySyncStep2", h.roomID, sender.conn.RemoteAddr())
+		case 0: // syncStep1 — reply with all accumulated updates as syncStep2, then empty syncStep2
+			updates := r.GetUpdates()
+			log.Printf("[hub:%s] ← %s: syncStep1, replying with %d update(s) as syncStep2", h.roomID, sender.conn.RemoteAddr(), len(updates))
+			for _, u := range updates {
+				sender.Send(asSyncStep2(u))
+			}
 			sender.Send(emptySyncStep2())
 		case 2: // update — store and fan out to others
 			others := len(h.clients) - 1
@@ -171,4 +175,17 @@ func (h *Hub) broadcastOthers(sender *Client, data []byte) {
 // Receiving this causes the y-websocket provider to set synced = true.
 func emptySyncStep2() []byte {
 	return []byte{0, 1, 2, 0, 0}
+}
+
+// asSyncStep2 repackages a stored [0, 2, data...] update message as [0, 1, data...]
+// (messageSync + syncStep2 subtype) so initial sync and syncStep1 replies conform to the
+// y-websocket protocol rather than sending raw update frames.
+func asSyncStep2(u []byte) []byte {
+	if len(u) >= 2 && u[0] == 0 && u[1] == 2 {
+		msg := make([]byte, len(u))
+		copy(msg, u)
+		msg[1] = 1
+		return msg
+	}
+	return u
 }

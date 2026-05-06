@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-const maxRoomsPerIP = 10
+const maxRoomsPerIP = 100
 
 var ErrTooManyRooms = errors.New("too many rooms")
 

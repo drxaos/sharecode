@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useYjs } from '../hooks/useYjs'
 import { useRoom } from '../hooks/useRoom'
@@ -24,6 +24,13 @@ export default function RoomEditor({ roomId, nickname }: RoomEditorProps) {
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [showRenameModal, setShowRenameModal] = useState(false)
   const [sizeWarning, setSizeWarning] = useState(false)
+  const sizeWarningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleSizeWarning = useCallback(() => {
+    setSizeWarning(true)
+    if (sizeWarningTimerRef.current) clearTimeout(sizeWarningTimerRef.current)
+    sizeWarningTimerRef.current = setTimeout(() => setSizeWarning(false), 5000)
+  }, [])
 
   // Handle WS close with code 1001 (room closed by someone)
   useEffect(() => {
@@ -40,23 +47,19 @@ export default function RoomEditor({ roomId, nickname }: RoomEditorProps) {
     }
   }, [yjsState?.provider, navigate])
 
-  // 100 KB limit warning
+  // 100 KB limit warning — fires on remote updates that push content over the limit
   useEffect(() => {
     const ydoc = yjsState?.ydoc
     const yText = yjsState?.yText
     if (!ydoc || !yText) return
     const handleUpdate = () => {
-      const len = yText.toString().length
-      if (len > 100_000 && !sizeWarning) {
-        setSizeWarning(true)
-        setTimeout(() => setSizeWarning(false), 5000)
-      }
+      if (yText.toString().length > 100_000) handleSizeWarning()
     }
     ydoc.on('update', handleUpdate)
     return () => {
       ydoc.off('update', handleUpdate)
     }
-  }, [yjsState?.ydoc, yjsState?.yText, sizeWarning])
+  }, [yjsState?.ydoc, yjsState?.yText, handleSizeWarning])
 
   const handleRename = (newName: string) => {
     sessionStorage.setItem('sharecode.nickname', newName)
@@ -123,6 +126,7 @@ export default function RoomEditor({ roomId, nickname }: RoomEditorProps) {
           language={language}
           fontSize={fontSize}
           theme={theme}
+          onSizeExceeded={handleSizeWarning}
         />
       </div>
 

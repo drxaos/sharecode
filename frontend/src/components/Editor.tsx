@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { EditorView, lineNumbers, keymap } from '@codemirror/view'
-import { EditorState, Compartment } from '@codemirror/state'
+import { EditorState, Compartment, Transaction } from '@codemirror/state'
 import {
   indentOnInput,
   syntaxHighlighting,
@@ -20,13 +20,16 @@ interface EditorProps {
   language: string
   fontSize: number
   theme: 'light' | 'dark'
+  onSizeExceeded?: () => void
 }
 
-export default function Editor({ yText, provider, language, fontSize, theme }: EditorProps) {
+export default function Editor({ yText, provider, language, fontSize, theme, onSizeExceeded }: EditorProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const langCompartment = useRef(new Compartment())
   const themeCompartment = useRef(new Compartment())
+  const onSizeExceededRef = useRef(onSizeExceeded)
+  onSizeExceededRef.current = onSizeExceeded
 
   // Initialize CodeMirror once
   useEffect(() => {
@@ -43,6 +46,14 @@ export default function Editor({ yText, provider, language, fontSize, theme }: E
           langCompartment.current.of([]),
           themeCompartment.current.of([]),
           yCollab(yText, provider.awareness),
+          EditorState.transactionFilter.of((tr) => {
+            if (!tr.docChanged || !tr.annotation(Transaction.userEvent)) return tr
+            if (tr.newDoc.length > 100_000) {
+              onSizeExceededRef.current?.()
+              return []
+            }
+            return tr
+          }),
           EditorView.theme({
             '&': { height: '100%', fontSize: 'inherit' },
             '.cm-scroller': { overflow: 'auto' },
