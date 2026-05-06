@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useYjs } from '../hooks/useYjs'
 import { useRoom } from '../hooks/useRoom'
-import Editor from '../components/Editor'
+import Editor, { type EditorHandle } from '../components/Editor'
 import Toolbar from '../components/Toolbar'
+import { FORMATTABLE_LANGUAGES } from '../lib/formatter'
 import ParticipantList from '../components/ParticipantList'
 import NicknameModal from '../components/NicknameModal'
 
@@ -20,11 +21,23 @@ export default function RoomEditor({ roomId, nickname }: RoomEditorProps) {
     yjsState?.yMeta ?? null,
   )
 
+  const editorRef = useRef<EditorHandle>(null)
   const [fontSize, setFontSize] = useState(14)
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [showRenameModal, setShowRenameModal] = useState(false)
   const [sizeWarning, setSizeWarning] = useState(false)
   const sizeWarningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [isFormatting, setIsFormatting] = useState(false)
+
+  const handleFormat = useCallback(async () => {
+    if (!editorRef.current || isFormatting) return
+    setIsFormatting(true)
+    try {
+      await editorRef.current.format()
+    } finally {
+      setIsFormatting(false)
+    }
+  }, [isFormatting])
 
   const handleSizeWarning = useCallback(() => {
     setSizeWarning(true)
@@ -100,6 +113,9 @@ export default function RoomEditor({ roomId, nickname }: RoomEditorProps) {
         roomId={roomId}
         language={language}
         onLanguageChange={setLanguage}
+        onFormat={handleFormat}
+        canFormat={FORMATTABLE_LANGUAGES.has(language)}
+        isFormatting={isFormatting}
         fontSize={fontSize}
         onFontSizeChange={setFontSize}
         theme={theme}
@@ -121,6 +137,7 @@ export default function RoomEditor({ roomId, nickname }: RoomEditorProps) {
           isDark={isDark}
         />
         <Editor
+          ref={editorRef}
           yText={yText}
           provider={provider}
           language={language}

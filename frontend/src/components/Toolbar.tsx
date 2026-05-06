@@ -5,6 +5,9 @@ interface ToolbarProps {
   roomId: string
   language: string
   onLanguageChange: (lang: string) => void
+  onFormat: () => void
+  canFormat: boolean
+  isFormatting: boolean
   fontSize: number
   onFontSizeChange: (size: number) => void
   theme: 'light' | 'dark'
@@ -18,6 +21,9 @@ export default function Toolbar({
   roomId,
   language,
   onLanguageChange,
+  onFormat,
+  canFormat,
+  isFormatting,
   fontSize,
   onFontSizeChange,
   theme,
@@ -69,6 +75,24 @@ export default function Toolbar({
           ))}
         </select>
       </label>
+
+      {/* Format button */}
+      <button
+        onClick={onFormat}
+        disabled={!canFormat || isFormatting}
+        title={canFormat ? 'Format code (Prettier)' : 'Formatting not supported for this language'}
+        className={`text-xs px-2 py-1 rounded border font-mono transition ${
+          canFormat
+            ? isDark
+              ? 'border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white'
+              : 'border-gray-300 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+            : isDark
+              ? 'border-gray-700 text-gray-600 cursor-not-allowed'
+              : 'border-gray-200 text-gray-300 cursor-not-allowed'
+        }`}
+      >
+        {isFormatting ? '···' : '</>'}
+      </button>
 
       {/* Font size selector */}
       <label className="flex items-center gap-1.5">

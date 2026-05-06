@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import { EditorView, lineNumbers, keymap } from '@codemirror/view'
 import { EditorState, Compartment, Transaction } from '@codemirror/state'
 import {
@@ -13,6 +13,11 @@ import { yCollab } from 'y-codemirror.next'
 import type * as Y from 'yjs'
 import type { WebsocketProvider } from 'y-websocket'
 import { getLang } from '../lib/languages'
+import { formatCode } from '../lib/formatter'
+
+export interface EditorHandle {
+  format: () => Promise<void>
+}
 
 interface EditorProps {
   yText: Y.Text
@@ -23,13 +28,33 @@ interface EditorProps {
   onSizeExceeded?: () => void
 }
 
-export default function Editor({ yText, provider, language, fontSize, theme, onSizeExceeded }: EditorProps) {
+const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
+  { yText, provider, language, fontSize, theme, onSizeExceeded },
+  ref,
+) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const langCompartment = useRef(new Compartment())
   const themeCompartment = useRef(new Compartment())
   const onSizeExceededRef = useRef(onSizeExceeded)
   onSizeExceededRef.current = onSizeExceeded
+
+  useImperativeHandle(ref, () => ({
+    async format() {
+      const view = viewRef.current
+      if (!view) return
+      const code = view.state.doc.toString()
+      try {
+        const formatted = await formatCode(language, code)
+        if (formatted === null || formatted === code) return
+        view.dispatch({
+          changes: { from: 0, to: view.state.doc.length, insert: formatted },
+        })
+      } catch {
+        // syntax error — silently ignore
+      }
+    },
+  }), [language])
 
   // Initialize CodeMirror once
   useEffect(() => {
@@ -40,7 +65,7 @@ export default function Editor({ yText, provider, language, fontSize, theme, onS
         extensions: [
           lineNumbers(),
           indentOnInput(),
-          indentUnit.of('  '),
+          indentUnit.of('    '),
           keymap.of([...defaultKeymap, indentWithTab]),
           syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
           langCompartment.current.of([]),
@@ -97,4 +122,6 @@ export default function Editor({ yText, provider, language, fontSize, theme, onS
       className="flex-1 h-full overflow-hidden"
     />
   )
-}
+})
+
+export default Editor
