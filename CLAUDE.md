@@ -13,7 +13,8 @@ Tech stack: Go backend (stdlib `net/http`, `gorilla/websocket`) + React/TypeScri
 ### Backend
 ```sh
 go build ./cmd/server          # compile
-go run ./cmd/server            # run (serves frontend/dist at /)
+go run ./cmd/server            # run prod (minimal logs)
+DEBUG=1 go run ./cmd/server    # run debug (all logs)
 go test ./...                  # run all tests
 go test ./internal/ws/...      # run tests in a specific package
 ```
@@ -22,16 +23,27 @@ go test ./internal/ws/...      # run tests in a specific package
 ```sh
 cd frontend
 npm install                    # install deps
-npm run dev                    # dev server on :5173 (proxies /api and /ws to :8080)
-npm run build                  # tsc + vite build → frontend/dist
+npm run dev                    # dev server on :5173 (proxies /api and /ws to :8080), VITE_DEBUG=true
+npm run build                  # prod build → frontend/dist (no debug logs)
+npm run build:debug            # debug build → frontend/dist (console logs enabled)
 ```
 
 ### Running the full stack locally
 Start the Go server first (`go run ./cmd/server`), then `npm run dev` in `frontend/`. Vite proxies API and WebSocket requests to `:8080`.
 
+### Makefile shortcuts
+```sh
+make build           # prod frontend build + go binary
+make build-debug     # debug frontend build + go binary
+make run             # prod build + run
+make run-debug       # debug build + run with DEBUG=1
+make docker-build        # prod Docker image → sharecode:prod
+make docker-build-debug  # debug Docker image → sharecode:debug
+```
+
 ### Docker
 ```sh
-docker compose up --build      # builds multi-stage image and starts on :8080
+docker compose up --build      # builds debug image (BUILD_MODE=debug, DEBUG=1) and starts on :8080
 ```
 
 ## Architecture
@@ -44,6 +56,7 @@ docker compose up --build      # builds multi-stage image and starts on :8080
 | `internal/room` | `Room` (content + close-timer) and `Store` (thread-safe in-memory map, rate-limits 10 rooms per IP) |
 | `internal/ws` | `Registry` (roomID → Hub map), `Hub` (goroutine per room: fan-out, Yjs sync), `Client` (read/write pumps) |
 | `internal/api` | HTTP handler: REST endpoints + WebSocket upgrade |
+| `internal/logger` | Debug-level logger; enabled via `DEBUG=1` env var; no-op in prod |
 
 **Room lifecycle:** `POST /api/rooms` creates a `Room` in the `Store` and spawns a `Hub` goroutine registered in `Registry`. `DELETE /api/rooms/{id}` calls `hub.Shutdown()` which closes all client connections. When the last client disconnects, the Hub starts a 5-minute `time.AfterFunc` that deletes the room from `Store` and `Registry` and stops the Hub.
 

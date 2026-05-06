@@ -1,10 +1,10 @@
 package ws
 
 import (
-	"log"
 	"sync"
 	"time"
 
+	"sharecode/internal/logger"
 	"sharecode/internal/room"
 )
 
@@ -45,10 +45,10 @@ func (h *Hub) stop() {
 }
 
 func (h *Hub) Run() {
-	log.Printf("[hub:%s] started", h.roomID)
+	logger.Debug("[hub:%s] started", h.roomID)
 	defer func() {
 		h.stop()
-		log.Printf("[hub:%s] stopped", h.roomID)
+		logger.Debug("[hub:%s] stopped", h.roomID)
 	}()
 	for {
 		select {
@@ -59,7 +59,7 @@ func (h *Hub) Run() {
 		case env := <-h.broadcast:
 			h.handleMessage(env.sender, env.data)
 		case <-h.shutdown:
-			log.Printf("[hub:%s] shutdown: closing %d client(s)", h.roomID, len(h.clients))
+			logger.Debug("[hub:%s] shutdown: closing %d client(s)", h.roomID, len(h.clients))
 			for c := range h.clients {
 				c.CloseWithCode(1001, "room closed")
 				close(c.send)
@@ -84,13 +84,13 @@ func (h *Hub) Register(c *Client) {
 func (h *Hub) handleRegister(c *Client) {
 	r, ok := h.store.Get(h.roomID)
 	if !ok {
-		log.Printf("[hub:%s] register: room gone, dropping %s", h.roomID, c.conn.RemoteAddr())
+		logger.Debug("[hub:%s] register: room gone, dropping %s", h.roomID, c.conn.RemoteAddr())
 		return
 	}
 	r.StopCloseTimer()
 	h.clients[c] = true
 	updates := r.GetUpdates()
-	log.Printf("[hub:%s] + client %s joined (total: %d), replaying %d update(s)", h.roomID, c.conn.RemoteAddr(), len(h.clients), len(updates))
+	logger.Debug("[hub:%s] + client %s joined (total: %d), replaying %d update(s)", h.roomID, c.conn.RemoteAddr(), len(h.clients), len(updates))
 
 	// Push all accumulated updates to the new client as syncStep2 messages so it catches up,
 	// then send an empty syncStep2 to mark the sync as complete (sets provider.synced).
@@ -98,7 +98,7 @@ func (h *Hub) handleRegister(c *Client) {
 		c.Send(asSyncStep2(u))
 	}
 	c.Send(emptySyncStep2())
-	log.Printf("[hub:%s] → %s: replay done, sent emptySyncStep2", h.roomID, c.conn.RemoteAddr())
+	logger.Debug("[hub:%s] → %s: replay done, sent emptySyncStep2", h.roomID, c.conn.RemoteAddr())
 
 	go c.WritePump()
 	go c.ReadPump()
@@ -110,16 +110,16 @@ func (h *Hub) handleUnregister(c *Client) {
 	}
 	delete(h.clients, c)
 	close(c.send)
-	log.Printf("[hub:%s] - client %s left (remaining: %d)", h.roomID, c.conn.RemoteAddr(), len(h.clients))
+	logger.Debug("[hub:%s] - client %s left (remaining: %d)", h.roomID, c.conn.RemoteAddr(), len(h.clients))
 
 	if len(h.clients) == 0 {
 		r, ok := h.store.Get(h.roomID)
 		if !ok {
 			return
 		}
-		log.Printf("[hub:%s] room empty, starting 5-min close timer", h.roomID)
+		logger.Debug("[hub:%s] room empty, starting 5-min close timer", h.roomID)
 		r.StartCloseTimer(5*time.Minute, func() {
-			log.Printf("[hub:%s] close timer fired, deleting room", h.roomID)
+			logger.Debug("[hub:%s] close timer fired, deleting room", h.roomID)
 			h.store.Delete(h.roomID)
 			h.registry.Delete(h.roomID)
 			h.stop()
@@ -144,20 +144,20 @@ func (h *Hub) handleMessage(sender *Client, data []byte) {
 		switch data[1] {
 		case 0: // syncStep1 — reply with all accumulated updates as syncStep2, then empty syncStep2
 			updates := r.GetUpdates()
-			log.Printf("[hub:%s] ← %s: syncStep1, replying with %d update(s) as syncStep2", h.roomID, sender.conn.RemoteAddr(), len(updates))
+			logger.Debug("[hub:%s] ← %s: syncStep1, replying with %d update(s) as syncStep2", h.roomID, sender.conn.RemoteAddr(), len(updates))
 			for _, u := range updates {
 				sender.Send(asSyncStep2(u))
 			}
 			sender.Send(emptySyncStep2())
 		case 2: // update — store and fan out to others
 			others := len(h.clients) - 1
-			log.Printf("[hub:%s] ← %s: doc update (%d bytes), storing + broadcasting to %d other(s)", h.roomID, sender.conn.RemoteAddr(), len(data), others)
+			logger.Debug("[hub:%s] ← %s: doc update (%d bytes), storing + broadcasting to %d other(s)", h.roomID, sender.conn.RemoteAddr(), len(data), others)
 			r.AppendUpdate(data)
 			h.broadcastOthers(sender, data)
 		}
 	case 1: // messageAwareness — forward cursors/selections to all other clients
 		others := len(h.clients) - 1
-		log.Printf("[hub:%s] ← %s: awareness (%d bytes), forwarding to %d other(s)", h.roomID, sender.conn.RemoteAddr(), len(data), others)
+		logger.Debug("[hub:%s] ← %s: awareness (%d bytes), forwarding to %d other(s)", h.roomID, sender.conn.RemoteAddr(), len(data), others)
 		h.broadcastOthers(sender, data)
 	}
 }

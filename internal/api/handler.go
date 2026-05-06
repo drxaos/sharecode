@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
+	"sharecode/internal/logger"
 	"sharecode/internal/room"
 	"sharecode/internal/ws"
 )
@@ -76,7 +77,7 @@ func (h *Handler) createRoom(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": "too many rooms"})
 		return
 	}
-	log.Printf("[api] POST /api/rooms from %s: created room %s", ip, rm.ID)
+	logger.Debug("[api] POST /api/rooms from %s: created room %s", ip, rm.ID)
 
 	hub := ws.NewHub(rm.ID, h.store, h.registry)
 	h.registry.Set(rm.ID, hub)
@@ -88,11 +89,11 @@ func (h *Handler) createRoom(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) getRoom(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if _, ok := h.store.Get(id); !ok {
-		log.Printf("[api] GET /api/rooms/%s: not found", id)
+		logger.Debug("[api] GET /api/rooms/%s: not found", id)
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
 		return
 	}
-	log.Printf("[api] GET /api/rooms/%s: ok", id)
+	logger.Debug("[api] GET /api/rooms/%s: ok", id)
 	writeJSON(w, http.StatusOK, map[string]string{})
 }
 
@@ -100,7 +101,7 @@ func (h *Handler) deleteRoom(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	rm, ok := h.store.Get(id)
 	if !ok {
-		log.Printf("[api] DELETE /api/rooms/%s: not found", id)
+		logger.Debug("[api] DELETE /api/rooms/%s: not found", id)
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
 		return
 	}
@@ -114,7 +115,7 @@ func (h *Handler) deleteRoom(w http.ResponseWriter, r *http.Request) {
 	if hasHub {
 		hub.Shutdown()
 	}
-	log.Printf("[api] DELETE /api/rooms/%s: deleted (hub present: %v)", id, hasHub)
+	logger.Debug("[api] DELETE /api/rooms/%s: deleted (hub present: %v)", id, hasHub)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -122,13 +123,13 @@ func (h *Handler) handleWS(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("roomId")
 	ip := clientIP(r)
 	if _, ok := h.store.Get(roomID); !ok {
-		log.Printf("[api] WS /ws/%s from %s: room not found", roomID, ip)
+		logger.Debug("[api] WS /ws/%s from %s: room not found", roomID, ip)
 		http.Error(w, "room not found", http.StatusNotFound)
 		return
 	}
 	hub, ok := h.registry.Get(roomID)
 	if !ok {
-		log.Printf("[api] WS /ws/%s from %s: hub not found", roomID, ip)
+		logger.Debug("[api] WS /ws/%s from %s: hub not found", roomID, ip)
 		http.Error(w, "room not found", http.StatusNotFound)
 		return
 	}
@@ -138,7 +139,7 @@ func (h *Handler) handleWS(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[api] WS /ws/%s from %s: upgrade error: %v", roomID, ip, err)
 		return
 	}
-	log.Printf("[api] WS /ws/%s from %s: upgraded, registering client", roomID, ip)
+	logger.Debug("[api] WS /ws/%s from %s: upgraded, registering client", roomID, ip)
 
 	client := ws.NewClient(conn, hub)
 	hub.Register(client)

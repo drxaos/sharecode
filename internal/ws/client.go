@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+
+	"sharecode/internal/logger"
 )
 
 const (
@@ -35,7 +37,7 @@ func (c *Client) Send(data []byte) {
 	select {
 	case c.send <- cp:
 	default:
-		log.Printf("[client:%s] send buffer full, dropping %d-byte message", c.conn.RemoteAddr(), len(data))
+		logger.Debug("[client:%s] send buffer full, dropping %d-byte message", c.conn.RemoteAddr(), len(data))
 	}
 }
 
@@ -44,16 +46,16 @@ func (c *Client) CloseWithCode(code int, msg string) {
 		websocket.CloseMessage,
 		websocket.FormatCloseMessage(code, msg),
 	)
-	c.conn.Close()
+	_ = c.conn.Close()
 }
 
 func (c *Client) WritePump() {
 	ticker := time.NewTicker(pingPeriod)
-	log.Printf("[client:%s] write pump started", c.conn.RemoteAddr())
+	logger.Debug("[client:%s] write pump started", c.conn.RemoteAddr())
 	defer func() {
 		ticker.Stop()
-		c.conn.Close()
-		log.Printf("[client:%s] write pump stopped", c.conn.RemoteAddr())
+		_ = c.conn.Close()
+		logger.Debug("[client:%s] write pump stopped", c.conn.RemoteAddr())
 	}()
 	for {
 		select {
@@ -63,14 +65,14 @@ func (c *Client) WritePump() {
 				_ = c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
-			log.Printf("[client:%s] → %d bytes", c.conn.RemoteAddr(), len(msg))
+			logger.Debug("[client:%s] → %d bytes", c.conn.RemoteAddr(), len(msg))
 			if err := c.conn.WriteMessage(websocket.BinaryMessage, msg); err != nil {
 				log.Printf("[client:%s] write error: %v", c.conn.RemoteAddr(), err)
 				return
 			}
 		case <-ticker.C:
 			_ = c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			log.Printf("[client:%s] → ping", c.conn.RemoteAddr())
+			logger.Debug("[client:%s] → ping", c.conn.RemoteAddr())
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				log.Printf("[client:%s] ping error: %v", c.conn.RemoteAddr(), err)
 				return
@@ -80,19 +82,19 @@ func (c *Client) WritePump() {
 }
 
 func (c *Client) ReadPump() {
-	log.Printf("[client:%s] read pump started", c.conn.RemoteAddr())
+	logger.Debug("[client:%s] read pump started", c.conn.RemoteAddr())
 	defer func() {
-		log.Printf("[client:%s] disconnected, unregistering", c.conn.RemoteAddr())
+		logger.Debug("[client:%s] disconnected, unregistering", c.conn.RemoteAddr())
 		select {
 		case c.hub.unregister <- c:
 		case <-c.hub.done:
 		}
-		c.conn.Close()
+		_ = c.conn.Close()
 	}()
 	c.conn.SetReadLimit(2 * 1024 * 1024)
 	_ = c.conn.SetReadDeadline(time.Now().Add(pongWait))
 	c.conn.SetPongHandler(func(string) error {
-		log.Printf("[client:%s] ← pong", c.conn.RemoteAddr())
+		logger.Debug("[client:%s] ← pong", c.conn.RemoteAddr())
 		return c.conn.SetReadDeadline(time.Now().Add(pongWait))
 	})
 	for {
@@ -101,11 +103,11 @@ func (c *Client) ReadPump() {
 			log.Printf("[client:%s] read error: %v", c.conn.RemoteAddr(), err)
 			break
 		}
-		log.Printf("[client:%s] ← %d bytes", c.conn.RemoteAddr(), len(msg))
+		logger.Debug("[client:%s] ← %d bytes", c.conn.RemoteAddr(), len(msg))
 		select {
 		case c.hub.broadcast <- &envelope{sender: c, data: msg}:
 		default:
-			log.Printf("[client:%s] broadcast buffer full, dropping message", c.conn.RemoteAddr())
+			logger.Debug("[client:%s] broadcast buffer full, dropping message", c.conn.RemoteAddr())
 		}
 	}
 }

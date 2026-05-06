@@ -7,11 +7,14 @@ import (
 	"path/filepath"
 
 	"sharecode/internal/api"
+	"sharecode/internal/logger"
 	"sharecode/internal/room"
 	"sharecode/internal/ws"
 )
 
 func main() {
+	logger.SetDebug(os.Getenv("DEBUG") == "1")
+
 	store := room.NewStore()
 	registry := ws.NewRegistry()
 

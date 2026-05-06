@@ -22,10 +22,17 @@ A real-time collaborative code editor. Create a room, share the URL, and edit co
 ### Docker (recommended)
 
 ```sh
-docker compose up --build
+docker compose up --build      # debug image (all logs enabled)
 ```
 
 The app will be available at [http://localhost:8080](http://localhost:8080).
+
+#### Docker build variants
+
+```sh
+make docker-build        # prod image  → sharecode:prod  (minimal logs)
+make docker-build-debug  # debug image → sharecode:debug (all logs)
+```
 
 ### Local development
 
@@ -34,7 +41,8 @@ The app will be available at [http://localhost:8080](http://localhost:8080).
 **Backend:**
 
 ```sh
-go run ./cmd/server
+go run ./cmd/server          # prod (minimal logs)
+DEBUG=1 go run ./cmd/server  # debug (all logs)
 ```
 
 The server listens on `:8080` and serves the built frontend from `frontend/dist`.
@@ -44,16 +52,28 @@ The server listens on `:8080` and serves the built frontend from `frontend/dist`
 ```sh
 cd frontend
 npm install
-npm run dev
+npm run dev   # dev server on :5173, debug logs enabled
 ```
 
 The Vite dev server runs on `:5173` and proxies `/api` and `/ws` requests to `:8080`. Open [http://localhost:5173](http://localhost:5173) for development with hot reload.
 
-**Production build:**
+**Build variants:**
 
 ```sh
-cd frontend && npm run build   # outputs to frontend/dist
-go run ./cmd/server            # serves the built frontend
+# prod (minimal logs)
+cd frontend && npm run build
+go run ./cmd/server
+
+# debug (all logs)
+cd frontend && npm run build:debug
+DEBUG=1 go run ./cmd/server
+```
+
+Or via Makefile:
+
+```sh
+make run         # prod build + run
+make run-debug   # debug build + run
 ```
 
 ## Running tests

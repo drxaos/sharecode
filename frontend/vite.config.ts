@@ -15,32 +15,19 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'codemirror-core': [
-            '@codemirror/view',
-            '@codemirror/state',
-            '@codemirror/language',
-            '@codemirror/commands',
-            '@codemirror/theme-one-dark',
-          ],
-          'codemirror-langs': [
-            '@codemirror/lang-javascript',
-            '@codemirror/lang-python',
-            '@codemirror/lang-go',
-            '@codemirror/lang-java',
-            '@codemirror/lang-cpp',
-            '@codemirror/lang-rust',
-            '@codemirror/lang-html',
-            '@codemirror/lang-css',
-            '@codemirror/lang-json',
-            '@codemirror/lang-sql',
-            '@codemirror/lang-yaml',
-            '@codemirror/lang-markdown',
-            '@codemirror/lang-xml',
-            '@codemirror/lang-php',
-          ],
-          'yjs-vendor': ['yjs', 'y-websocket', 'y-codemirror.next'],
+        manualChunks(id) {
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router-dom')) {
+            return 'react-vendor'
+          }
+          if (id.includes('node_modules/yjs') || id.includes('node_modules/y-websocket') || id.includes('node_modules/y-codemirror')) {
+            return 'yjs-vendor'
+          }
+          if (id.includes('node_modules/@codemirror/lang-')) {
+            return 'codemirror-langs'
+          }
+          if (id.includes('node_modules/@codemirror/')) {
+            return 'codemirror-core'
+          }
         },
       },
     },

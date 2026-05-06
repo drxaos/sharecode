@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import * as Y from 'yjs'
 import { WebsocketProvider } from 'y-websocket'
 import { getColor } from '../lib/colors'
+import { debug, debugWarn } from '../lib/logger'
 
 export interface YjsState {
   ydoc: Y.Doc
@@ -20,7 +21,7 @@ export function useYjs(roomId: string, nickname: string): YjsState | null {
     const color = getColor(ydoc.clientID)
     const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
     const wsBase = `${wsProtocol}://${window.location.host}/ws`
-    console.log(`[yjs:${roomId}] init — clientID=${ydoc.clientID}, nickname="${nickname}", color=${color}, url=${wsBase}/${roomId}`)
+    debug(`[yjs:${roomId}] init — clientID=${ydoc.clientID}, nickname="${nickname}", color=${color}, url=${wsBase}/${roomId}`)
 
     const provider = new WebsocketProvider(wsBase, roomId, ydoc)
     provider.awareness.setLocalStateField('user', { name: nickname, color })
@@ -30,13 +31,13 @@ export function useYjs(roomId: string, nickname: string): YjsState | null {
     setObjects({ ydoc, provider, yText, yMeta })
 
     const handleStatus = ({ status }: { status: string }) => {
-      console.log(`[yjs:${roomId}] status → ${status}`)
+      debug(`[yjs:${roomId}] status → ${status}`)
       setIsConnected(status === 'connected')
     }
     provider.on('status', handleStatus)
 
     provider.on('sync', (synced: boolean) => {
-      console.log(`[yjs:${roomId}] sync → ${synced}`)
+      debug(`[yjs:${roomId}] sync → ${synced}`)
     })
 
     let updateCount = 0
@@ -44,9 +45,9 @@ export function useYjs(roomId: string, nickname: string): YjsState | null {
       updateCount++
       const size = yText.toString().length
       const src = origin === provider ? 'remote' : 'local'
-      console.log(`[yjs:${roomId}] doc update #${updateCount} origin=${src} yText.length=${size}`)
+      debug(`[yjs:${roomId}] doc update #${updateCount} origin=${src} yText.length=${size}`)
       if (size > 100_000) {
-        console.warn(`[yjs:${roomId}] content exceeded 100 KB (${size} chars)`)
+        debugWarn(`[yjs:${roomId}] content exceeded 100 KB (${size} chars)`)
       }
     }
     ydoc.on('update', handleUpdate)
@@ -54,12 +55,12 @@ export function useYjs(roomId: string, nickname: string): YjsState | null {
     const handleAwareness = () => {
       const participants = [...provider.awareness.getStates().entries()]
         .map(([id, state]) => `${id}:${(state as Record<string, Record<string, string>>)?.user?.name ?? '?'}`)
-      console.log(`[yjs:${roomId}] awareness — [${participants.join(', ')}]`)
+      debug(`[yjs:${roomId}] awareness — [${participants.join(', ')}]`)
     }
     provider.awareness.on('change', handleAwareness)
 
     return () => {
-      console.log(`[yjs:${roomId}] teardown`)
+      debug(`[yjs:${roomId}] teardown`)
       provider.off('status', handleStatus)
       ydoc.off('update', handleUpdate)
       provider.awareness.off('change', handleAwareness)

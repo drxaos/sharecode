@@ -1,9 +1,12 @@
+ARG BUILD_MODE=prod
+
 FROM node:20-alpine AS frontend-builder
+ARG BUILD_MODE
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend/ ./
-RUN npm run build
+RUN if [ "$BUILD_MODE" = "debug" ]; then npm run build:debug; else npm run build; fi
 
 FROM golang:1.22-alpine AS backend-builder
 WORKDIR /app
